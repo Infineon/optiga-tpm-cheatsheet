@@ -1,0 +1,25 @@
+name:
+  CI
+on:
+  [push, pull_request]
+jobs:
+  script-test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        docker_image: ["debian-buster", "debian-bullseye", "ubuntu-18.04", "ubuntu-20.04", "ubuntu-22.04"]
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Launch docker container (${{ matrix.docker_image }})
+        uses: Infineon/optiga-tpm-cheatsheet/.github/actions/runScript@master
+        with:
+          PROJECT_NAME: ${{ github.event.repository.name }}
+          DOCKER_IMAGE: ${{ matrix.docker_image }}
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: Executed scripts
+          path: ${{ matrix.docker_image }}.sh

@@ -1,0 +1,20 @@
+openssl_conf = openssl_init
+
+[openssl_init]
+engines = engine_section
+
+[engine_section]
+tpm2tss = tpm2tss_section
+
+[tpm2tss_section]
+engine_id = tpm2tss
+dynamic_path = /usr/lib/x86_64-linux-gnu/engines-1.1/libtpm2tss.so
+default_algorithms = RSA
+init = 1
+SET_TCTI = mssim:host=127.0.0.1,port=2321
+
+[req]
+distinguished_name = subject
+
+[subject]
+
