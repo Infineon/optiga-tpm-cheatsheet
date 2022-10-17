@@ -11,8 +11,10 @@ export DOCKER_BUILD_DIR="/root/$PROJECT_NAME"
 
 docker run \
            --memory-swap -1 \
+           --platform $PLATFORM \
            --env WORKSPACE_DIR=$DOCKER_BUILD_DIR \
            --env DOCKER_IMAGE=$DOCKER_IMAGE \
+           --env PLATFORM=$PLATFORM \
            --env-file .ci/docker.env \
            -v "$GITHUB_WORKSPACE:$DOCKER_BUILD_DIR" \
            `echo ${DOCKER_IMAGE} | sed 's/-/:/'` \

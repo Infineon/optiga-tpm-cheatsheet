@@ -113,22 +113,15 @@ OPTIGA™ TPM 2.0 command reference and code examples.
 
 # Prerequisites
 
-- x86_64 system: Debian (buster, bullseye), Ubuntu (18.04, 20.04, 22.04)
+- Platform: x86_64, aarch64
+- OS: Debian (buster, bullseye), Ubuntu (18.04, 20.04, 22.04)
 
 <!--
-- For simulated TPM 2.0, tested on:
-  ```exclude
-  $ lsb_release -a
-  No LSB modules are available.
-  Distributor ID:  Ubuntu
-  Description:     Ubuntu 20.04.2 LTS
-  Release:         20.04
-  Codename:        focal
-
-  $ uname -a
-  Linux ubuntu 5.8.0-59-generic #66~20.04.1-Ubuntu SMP Thu Jun 17 11:14:10 UTC 2021 x86_64 x86_64 x86_64 GNU/Linux
-  ```
 - For hardware TPM 2.0, tested on Raspberry Pi 4 Model B with Iridium 9670 TPM 2.0 board [[10]](#10). For detailed setup guide please visit [[8]](#8).
+-->
+
+<!-- to-do:
+CI failed on aarch64 with Ubuntu:22.04 image. Unable to launch swtpm, returned error: "swtpm: seccomp_load failed with errno 125: Operation canceled". Should be docker issue, however passing "--security-opt=seccomp:unconfined" to docker run does not help...
 -->
 
 # Setup on Debian/Ubuntu
@@ -230,7 +223,7 @@ $ sudo make install
 Install libtpms-based TPM emulator on Ubuntu-22.04:
 ```ubuntu-22.04
 # Install dependencies
-$ apt-get install -y dh-autoreconf libtasn1-6-dev net-tools libgnutls28-dev expect gawk socat libfuse-dev libseccomp-dev make libjson-glib-dev gnutls-bin
+$ sudo apt-get install -y dh-autoreconf libtasn1-6-dev net-tools libgnutls28-dev expect gawk socat libfuse-dev libseccomp-dev make libjson-glib-dev gnutls-bin
 
 # Install libtpms-devel
 $ git clone https://github.com/stefanberger/libtpms ~/libtpms
@@ -1398,14 +1391,10 @@ In the event that TPM key is not created using `tpm2tss-genkey`, use the followi
 
 Build the tool and set LD_LIBRARY_PATH:
 ```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
-# Debian (Bullseye, Buster), Ubuntu (18.04, 20.04)
-$ export LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu/engines-1.1
-```
-```exclude
-# Raspberry Pi
-$ export LD_LIBRARY_PATH=/usr/lib/arm-linux-gnueabihf/engines-1.1
-```
-```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
+# Create a symbolic link to discard the platform dependent path
+$ ln -fs /usr/lib/*-linux-gnu /usr/lib/any-linux-gnu
+$ export LD_LIBRARY_PATH=/usr/lib/any-linux-gnu/engines-1.1
+
 $ gcc -Wall -o convert ~/optiga-tpm-cheatsheet/openssl-lib-convert-to-pem-key/convert.c -L$LD_LIBRARY_PATH -lcrypto -ltss2-mu -ltpm2tss
 ```
 
@@ -1571,6 +1560,9 @@ Overwrite the `openssl.cnf`:
 ```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
 $ mv /usr/lib/ssl/openssl.cnf /usr/lib/ssl/openssl.cnf.bkup
 $ cp ~/optiga-tpm-cheatsheet/nginx/openssl.cnf /usr/lib/ssl/openssl.cnf
+
+# Create a symbolic link to discard the platform dependent path
+$ ln -fs /usr/lib/*-linux-gnu /usr/lib/any-linux-gnu
 ```
 
 Restart Nginx:
@@ -1668,7 +1660,8 @@ This section is for Debian (Bullseye, Buster), Ubuntu (18.04, 20.04).
 
 Debian (Bullseye, Buster), Ubuntu (18.04, 20.04):
 ```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
-$ export LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu/engines-1.1
+$ ln -fs /usr/lib/*-linux-gnu /usr/lib/any-linux-gnu
+$ export LD_LIBRARY_PATH=/usr/lib/any-linux-gnu/engines-1.1
 
 $ gcc -Wall -o examples ~/optiga-tpm-cheatsheet/openssl1-lib-general-examples/examples.c -L$LD_LIBRARY_PATH -lssl -lcrypto -ltpm2tss
 $ ./examples
@@ -3884,29 +3877,30 @@ $ git clone https://github.com/infineon/optiga-tpm-cheatsheet ~/optiga-tpm-cheat
 $ cd ~/optiga-tpm-cheatsheet
 
 # Linux
-$ export DOCKER_IMAGE=debian:bullseye
+$ export DOCKER_IMAGE=debian-bullseye
 $ docker run  --cpus=$(nproc) \
               --memory=7g \
               -it \
               --env WORKSPACE_DIR=/workspace \
               --env DOCKER_IMAGE=$DOCKER_IMAGE \
               --env-file .ci/docker.env \
-              -v "$(pwd):/workspace" \
-              $DOCKER_IMAGE \
-              /bin/bash -c "/workspace/.ci/docker.sh"
-
+              -v "$(pwd):/root/optiga-tpm-cheatsheet" \
+              `echo ${DOCKER_IMAGE} | sed 's/-/:/'` \
+              /bin/bash -c "/root/optiga-tpm-cheatsheet/.ci/docker.sh"
+```
+<!--
 # Windows
-$ set DOCKER_IMAGE=debian:bullseye
+$ set DOCKER_IMAGE=debian-bullseye
 $ docker run  --cpus=%NUMBER_OF_PROCESSORS% ^
               --memory=7g ^
               -it ^
               --env WORKSPACE_DIR=/workspace ^
               --env DOCKER_IMAGE=%DOCKER_IMAGE% ^
               --env-file .ci/docker.env ^
-              -v "%cd%:/workspace" ^
+              -v "%cd%:/root/optiga-tpm-cheatsheet" ^
               %DOCKER_IMAGE% ^
-              /bin/bash -c "/workspace/.ci/docker.sh"
-```
+              /bin/bash -c "/root/optiga-tpm-cheatsheet/.ci/docker.sh"
+-->
 
 # References
 
