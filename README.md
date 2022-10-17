@@ -1,4 +1,5 @@
-[![example workflow](https://github.com/infineon/optiga-tpm-cheatsheet/workflows/CI/badge.svg?branch=master)](https://github.com/infineon/optiga-tpm-cheatsheet/actions)
+<!--[![example workflow](https://github.com/infineon/optiga-tpm-cheatsheet/workflows/CI/badge.svg?branch=master)](https://github.com/infineon/optiga-tpm-cheatsheet/actions)-->
+[![example workflow](https://github.com/wxleong/optiga-tpm-cheatsheet/workflows/CI/badge.svg?branch=develop-arm)](https://github.com/wxleong/optiga-tpm-cheatsheet/actions)
 
 # Introduction
 
