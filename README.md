@@ -142,8 +142,8 @@ $ sudo apt -y install python-yaml
 ```
 
 Download this project for later use:
-```exclude
-$ git clone https://github.com/infineon/optiga-tpm-cheatsheet ~/optiga-tpm-cheatsheet
+```all
+$ git clone https://github.com/wxleong/optiga-tpm-cheatsheet ~/optiga-tpm-cheatsheet
 ```
 
 Install tpm2-tss:

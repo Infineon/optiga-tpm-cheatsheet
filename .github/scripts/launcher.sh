@@ -7,7 +7,7 @@ set -exo pipefail
 
 # GITHUB_WORKSPACE is set by actions/checkout@v3
 
-export DOCKER_BUILD_DIR="/root/$PROJECT_NAME"
+export DOCKER_BUILD_DIR="/$PROJECT_NAME"
 
 docker run \
            --memory-swap -1 \
