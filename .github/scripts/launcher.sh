@@ -11,7 +11,7 @@ export DOCKER_BUILD_DIR="/root/$PROJECT_NAME"
 
 docker run \
            --memory-swap -1 \
-           --platform $PLATFORM \
+           --platform `echo ${PLATFORM} | sed 's/-/\//'` \
            --env WORKSPACE_DIR=$DOCKER_BUILD_DIR \
            --env DOCKER_IMAGE=$DOCKER_IMAGE \
            --env PLATFORM=$PLATFORM \
