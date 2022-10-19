@@ -21,7 +21,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Launch docker container (${{ matrix.docker_image }})
-        uses: wxleong/optiga-tpm-cheatsheet/.github/actions/runScript@develop-arm
+        uses: Infineon/optiga-tpm-cheatsheet/.github/actions/runScript@master
         with:
           PROJECT_NAME: ${{ github.event.repository.name }}
           DOCKER_IMAGE: ${{ matrix.docker_image }}

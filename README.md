@@ -1,5 +1,4 @@
-<!--[![example workflow](https://github.com/infineon/optiga-tpm-cheatsheet/workflows/CI/badge.svg?branch=master)](https://github.com/infineon/optiga-tpm-cheatsheet/actions)-->
-[![example workflow](https://github.com/wxleong/optiga-tpm-cheatsheet/workflows/CI/badge.svg?branch=develop-arm)](https://github.com/wxleong/optiga-tpm-cheatsheet/actions)
+[![example workflow](https://github.com/infineon/optiga-tpm-cheatsheet/workflows/CI/badge.svg?branch=master)](https://github.com/infineon/optiga-tpm-cheatsheet/actions)
 
 # Introduction
 
@@ -143,7 +142,7 @@ $ sudo apt -y install python-yaml
 
 Download this project for later use:
 ```all
-$ git clone https://github.com/wxleong/optiga-tpm-cheatsheet ~/optiga-tpm-cheatsheet
+$ git clone https://github.com/Infineon/optiga-tpm-cheatsheet ~/optiga-tpm-cheatsheet
 ```
 
 Install tpm2-tss:
