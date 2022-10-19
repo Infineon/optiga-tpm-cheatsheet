@@ -7,12 +7,14 @@ set -exo pipefail
 
 # GITHUB_WORKSPACE is set by actions/checkout@v3
 
-export DOCKER_BUILD_DIR="/root/$PROJECT_NAME"
+export DOCKER_BUILD_DIR="/$PROJECT_NAME"
 
 docker run \
            --memory-swap -1 \
+           --platform `echo ${PLATFORM} | sed 's/-/\//'` \
            --env WORKSPACE_DIR=$DOCKER_BUILD_DIR \
            --env DOCKER_IMAGE=$DOCKER_IMAGE \
+           --env PLATFORM=$PLATFORM \
            --env-file .ci/docker.env \
            -v "$GITHUB_WORKSPACE:$DOCKER_BUILD_DIR" \
            `echo ${DOCKER_IMAGE} | sed 's/-/:/'` \
