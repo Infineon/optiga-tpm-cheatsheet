@@ -127,7 +127,6 @@ CI failed on aarch64 with Ubuntu:22.04 image. Unable to launch swtpm, returned e
 
 Download package information:
 ```all
-$ exit 0
 $ sudo apt update
 ```
 
