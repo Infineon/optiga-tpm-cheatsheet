@@ -29,8 +29,23 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: Executed scripts
+          name: executed-scripts
           path: ${{ matrix.platform }}_${{ matrix.docker_image }}.sh
+  release:
+    name: Create Release
+    needs: test
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: executed-scripts
+          path: ci-script-collection
       - name: Create release
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
@@ -41,4 +56,4 @@ jobs:
           prerelease: false
           files: |
             LICENSE
-            ${{ matrix.platform }}_${{ matrix.docker_image }}.sh
+            ci-script-collection/*
