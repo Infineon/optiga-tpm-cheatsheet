@@ -87,6 +87,7 @@ OPTIGA™ TPM 2.0 command reference and code examples.
     - **[Signing & Verification](#signing--verification)**
     - **[Startup](#startup)**
     - **[TPM Clear](#tpm-clear)**
+    - **[Vendor](#vendor)**
 - **[Examples (FAPI)](#examples-fapi)**
     - **[Provision](#provision)**
     - **[Change Auth](#change-auth)**
@@ -3411,6 +3412,62 @@ To change the endorsement primary seed (EPS) to a new value from the TPM's rando
 $ tpm2_changeeps
 ```
 
+## Vendor
+
+This section only applicable to SPI-based TPM firmware version 16.00 and above, and I2C-based TPM firmware version 26.00 and above.
+
+Use command TPM_CC_GetCapability to read vendor specific capabilities (below contains default responses from TPM):
+```exclude
+# TPM_PT_VENDOR_VAR_ENCRYPTDECRYPT2
+$ echo 8001000000160000017a00000100c000000500000001 | xxd -r -p | tpm2_send | xxd -p
+80010000001900000000000000010000000001000400010000
+                                      ^TPM2B_DATA.size = 4
+                                                 .buffer[0:1] = Indicates whether configuration is enabled (0x0001) / disabled (0x0000)
+                                                        [2:3] = Indicates whether feature is permanently locked (0x0001)
+
+# TPM_PT_VENDOR_VAR_CHANGEEPS
+$ echo 8001000000160000017a00000100c000000600000001 | xxd -r -p | tpm2_send | xxd -p
+80010000001900000000000000010000000001000400010000
+
+# TPM_PT_VENDOR_VAR_TPMID_NV
+$ echo 8001000000160000017a00000100c000000700000001 | xxd -r -p | tpm2_send | xxd -p
+80010000001900000000000000010000000001000400010000
+```
+
+Install eltt2 [[17]](#17):
+```all
+$ git clone https://github.com/Infineon/eltt2 ~/eltt2
+$ cd ~/eltt2
+$ git checkout 3d55476179da9bd61c2df1ba1ef010afe27e7776
+$ gcc eltt2.c -o eltt2
+```
+
+Set vendor capabilities with `eltt2` instead of `tpm2_send` because we are not using standard commands to set these capabilities. **Be warned, know what you are doing, there is no return after setting it to permanently locked state. Examples here only set the enable/disable flag.**
+```exclude
+$ cd ~/eltt2
+
+# disable TPM_PT_VENDOR_VAR_ENCRYPTDECRYPT2
+$ ./eltt2 -b 800200000023200004004000000c00000009400000090000010000c000000500000000
+# enable TPM_PT_VENDOR_VAR_ENCRYPTDECRYPT2
+$ ./eltt2 -b 800200000023200004004000000c00000009400000090000010000c000000500010000
+# read TPM_PT_VENDOR_VAR_ENCRYPTDECRYPT2
+$ ./eltt2 -b 8001000000160000017a00000100c000000500000001
+
+# disable TPM_PT_VENDOR_VAR_CHANGEEPS
+$ ./eltt2 -b 800200000023200004004000000c00000009400000090000010000c000000600000000
+# enable TPM_PT_VENDOR_VAR_CHANGEEPS
+$ ./eltt2 -b 800200000023200004004000000c00000009400000090000010000c000000600010000
+# read TPM_PT_VENDOR_VAR_CHANGEEPS
+$ ./eltt2 -b 8001000000160000017a00000100c000000600000001
+
+# disable TPM_PT_VENDOR_VAR_TPMID_NV
+$ ./eltt2 -b 800200000023200004004000000c00000009400000090000010000c000000700000000
+# enable TPM_PT_VENDOR_VAR_TPMID_NV
+$ ./eltt2 -b 800200000023200004004000000c00000009400000090000010000c000000700010000
+# read TPM_PT_VENDOR_VAR_TPMID_NV
+$ ./eltt2 -b 8001000000160000017a00000100c000000700000001
+```
+
 # Examples (FAPI)
 
 TCG Software Stack 2.0 (TSS 2.0) Specification Structure:
@@ -3919,6 +3976,7 @@ $ docker run  --cpus=%NUMBER_OF_PROCESSORS% ^
 <a id="14">[14] https://trustedcomputinggroup.org/resource/tcg-tss-2-0-system-level-api-sapi-specification/</a><br>
 <a id="15">[15] https://trustedcomputinggroup.org/resource/tcg-tss-2-0-enhanced-system-api-esapi-specification/</a><br>
 <a id="16">[16] https://trustedcomputinggroup.org/resource/tss-fapi/</a><br>
+<a id="17">[17] https://github.com/Infineon/eltt2</a><br>
 
 # License
 
