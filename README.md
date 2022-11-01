@@ -3414,6 +3414,8 @@ $ tpm2_changeeps
 
 ## Vendor
 
+This section only applicable to SPI-based TPM firmware version 16.00 and above, and I2C-based TPM firmware version 26.00 and above.
+
 Use command TPM_CC_GetCapability to read vendor specific capabilities (below contains default responses from TPM):
 ```exclude
 # TPM_PT_VENDOR_VAR_ENCRYPTDECRYPT2
