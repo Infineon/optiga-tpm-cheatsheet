@@ -244,10 +244,10 @@ $ sudo make install
 $ sudo ldconfig
 ```
 
-Test installation:
+Start TPM simulator/emulator:
 1. Start Microsoft TPM2.0 simulator on Debian (Bullseye, Buster), Ubuntu (18.04, 20.04):
     ```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
-    $ cd ~
+    $ cd /tmp
     $ tpm2-simulator &
     LIBRARY_COMPATIBILITY_CHECK is ON
     Manufacturing NV state...
@@ -1498,8 +1498,34 @@ $ tpm2_clear -c p
 
 ### Server-client TLS Communication
 
+2 examples, TPM-enabled server or client.
+
+TPM-enabled server:
 ```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
-$ cd ~/optiga-tpm-cheatsheet/openssl1-cli-tls
+$ cd ~/optiga-tpm-cheatsheet/openssl1-cli-tls/tpm-on-server
+$ chmod a+x *.sh
+$ ./0_clean-up.sh
+$ ./1_init-tpm.sh
+$ ./2_gen-ca-crt.sh
+$ ./3_gen-server-crt.sh
+$ ./4_gen-client-crt.sh
+
+# start server
+$ ./5_start-server.sh &
+$ sleep 5
+
+# start client
+$ ./6_start-client.sh
+
+# house keeping
+$ ./0_clean-up.sh
+$ pkill openssl
+$ tpm2_clear -c p
+```
+
+TPM-enabled client:
+```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
+$ cd ~/optiga-tpm-cheatsheet/openssl1-cli-tls/tpm-on-client
 $ chmod a+x *.sh
 $ ./0_clean-up.sh
 $ ./1_init-tpm.sh
@@ -1676,8 +1702,36 @@ $ ./examples
 
 ### Server-client TLS Communication
 
+2 examples, TPM-enabled server or client.
+
+TPM-enabled server:
 ```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
-$ cd ~/optiga-tpm-cheatsheet/openssl1-lib-tls
+$ cd ~/optiga-tpm-cheatsheet/openssl1-lib-tls/tpm-on-server
+$ chmod a+x *.sh
+$ ./0_clean-up.sh
+$ ./1_init-tpm-key.sh
+$ ./2_init-software-key.sh
+$ ./3_gen-ca-crt.sh
+$ ./4_gen-tpm-client-crt.sh
+$ ./5_gen-software-client-crt.sh
+$ ./6_build-server-client.sh
+
+# start server
+$ ./7_start-server.sh &
+$ sleep 5
+
+# start client
+$ ./8_start-software-client.sh
+
+# house keeping
+$ ./0_clean-up.sh
+$ pkill server
+$ tpm2_clear -c p
+```
+
+TPM-enabled client:
+```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
+$ cd ~/optiga-tpm-cheatsheet/openssl1-lib-tls/tpm-on-client
 $ chmod a+x *.sh
 $ ./0_clean-up.sh
 $ ./1_init-tpm-key.sh
@@ -1821,8 +1875,34 @@ $ tpm2_clear -c p
 
 ### Server-client TLS Communication
 
+2 examples, TPM-enabled server or client.
+
+TPM-enabled server:
 ```ubuntu-22.04
-$ cd ~/optiga-tpm-cheatsheet/openssl3-cli-tls
+$ cd ~/optiga-tpm-cheatsheet/openssl3-cli-tls/tpm-on-server
+$ chmod a+x *.sh
+$ ./0_clean-up.sh
+$ ./1_init-tpm.sh
+$ ./2_gen-ca-crt.sh
+$ ./3_gen-server-crt.sh
+$ ./4_gen-client-crt.sh
+
+# start server
+$ ./5_start-server.sh &
+$ sleep 5
+
+# start client
+$ ./6_start-client.sh
+
+# house keeping
+$ ./0_clean-up.sh
+$ pkill openssl
+$ tpm2_clear -c p
+```
+
+TPM-enabled client:
+```ubuntu-22.04
+$ cd ~/optiga-tpm-cheatsheet/openssl3-cli-tls/tpm-on-client
 $ chmod a+x *.sh
 $ ./0_clean-up.sh
 $ ./1_init-tpm.sh
@@ -1860,8 +1940,36 @@ $ ./examples
 
 ### Server-client TLS Communication
 
+2 examples, TPM-enabled server or client.
+
+TPM-enabled server:
 ```ubuntu-22.04
-$ cd ~/optiga-tpm-cheatsheet/openssl3-lib-tls
+$ cd ~/optiga-tpm-cheatsheet/openssl3-lib-tls/tpm-on-server
+$ chmod a+x *.sh
+$ ./0_clean-up.sh
+$ ./1_init-tpm-key.sh
+$ ./2_init-software-key.sh
+$ ./3_gen-ca-crt.sh
+$ ./4_gen-tpm-client-crt.sh
+$ ./5_gen-software-client-crt.sh
+$ ./6_build-server-client.sh
+
+# start server
+$ ./7_start-server.sh &
+$ sleep 5
+
+# start client
+$ ./8_start-software-client.sh
+
+# house keeping
+$ ./0_clean-up.sh
+$ pkill server
+$ tpm2_clear -c p
+```
+
+TPM-enabled client:
+```ubuntu-22.04
+$ cd ~/optiga-tpm-cheatsheet/openssl3-lib-tls/tpm-on-client
 $ chmod a+x *.sh
 $ ./0_clean-up.sh
 $ ./1_init-tpm-key.sh
