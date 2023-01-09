@@ -142,7 +142,7 @@ $ sudo apt -y install python-yaml
 ```
 
 Download this project for later use:
-```all
+```exclude
 $ git clone https://github.com/Infineon/optiga-tpm-cheatsheet ~/optiga-tpm-cheatsheet
 ```
 
