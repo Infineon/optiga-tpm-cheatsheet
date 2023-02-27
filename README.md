@@ -265,7 +265,19 @@ Start TPM simulator/emulator:
     Start Libtpms-based TPM emulator on Ubuntu-22.04:
     ```ubuntu-22.04
     $ mkdir /tmp/emulated_tpm
-    $ swtpm_setup --create-config-files root --tpmstate /tmp/emulated_tpm --create-ek-cert --create-platform-cert --tpm2 --overwrite
+
+    # Create configuration files for swtpm_setup:
+    # - /root/.config/swtpm_setup.conf
+    # - /root/.config/swtpm-localca.conf
+    #   This file specifies the location of the CA keys and certificates:
+    #   - /root/.config/var/lib/swtpm-localca/*.pem
+    # - /root/.config/swtpm-localca.options
+    $ swtpm_setup --tpm2 --create-config-files overwrite,root
+
+    # Initialize the swtpm
+    $ swtpm_setup --tpm2 --config /root/.config/swtpm_setup.conf --tpm-state /tmp/emulated_tpm --overwrite --create-ek-cert --create-platform-cert --write-ek-cert-files /tmp/emulated_tpm
+
+    # Launch the swtpm
     $ swtpm socket --tpm2 --flags not-need-init --tpmstate dir=/tmp/emulated_tpm --server type=tcp,port=2321 --ctrl type=tcp,port=2322 &   <--- to debug, add "--log level=?"
     $ sleep 5
     ```
