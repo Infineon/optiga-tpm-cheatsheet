@@ -1,10 +1,13 @@
 name:
   CI
 on:
-  [push, pull_request]
+  push:
+  pull_request:
+  schedule:
+    - cron: '0 0 * * MON'
 jobs:
   test:
-    name: Cross Platform Testing
+    name: 'Cross Platform Testing'
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -14,43 +17,49 @@ jobs:
           - docker_image: "ubuntu-22.04"
             platform: "linux-arm64"
     steps:
-      - name: Set up QEMU for cross-platform emulation
+      - name: 'Set up QEMU for cross-platform emulation'
         uses: docker/setup-qemu-action@v2
-      - name: Check out repository
+      - name: 'Check out repository'
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
-      - name: Launch docker container (${{ matrix.docker_image }})
-        uses: Infineon/optiga-tpm-cheatsheet/.github/actions/runScript@master
-        with:
+      - name: 'Test README.md Instructions'
+        env:
           PROJECT_NAME: ${{ github.event.repository.name }}
           DOCKER_IMAGE: ${{ matrix.docker_image }}
           PLATFORM: ${{ matrix.platform }}
-      - name: Upload artifacts
+        run: |
+          .github/docker/launcher.sh
+        shell: bash
+      - name: 'Upload artifacts'
         uses: actions/upload-artifact@v3
         with:
-          name: executed-scripts
-          path: ${{ matrix.platform }}_${{ matrix.docker_image }}.sh
+          name: 'executed-test-scripts'
+          path: |
+            ~/${{ matrix.platform }}_${{ matrix.docker_image }}/${{ matrix.platform }}_${{ matrix.docker_image }}.sh
   release:
-    name: Create Release
+    name: 'Create Release'
     needs: test
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     steps:
-      - name: Check out repository
+      - name: 'Check out repository'
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
-      - name: Download artifacts
+      - name: 'Changelog Pruning'
+        run: |
+          sed -n `awk '/## \[${{ github.ref_name }}/{c++} c==1{ print NR; exit }' CHANGELOG.md`',$p' CHANGELOG.md > .CHANGELOG.md.tmp
+          sed `awk '/## \[[x0-9]/{c++} c==2{ print NR; exit }' .CHANGELOG.md.tmp`',$d' .CHANGELOG.md.tmp > ${{ github.workspace }}-CHANGELOG.txt
+      - name: 'Download artifacts'
         uses: actions/download-artifact@v3
         with:
-          name: executed-scripts
+          name: 'executed-test-scripts'
           path: ci-script-collection
-      - name: Create release
+      - name: 'Create release'
         uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
         with:
-          body_path: CHANGELOG.md
+          body_path: ${{ github.workspace }}-CHANGELOG.txt
           token: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
           draft: false
           prerelease: false
