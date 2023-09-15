@@ -19,9 +19,9 @@ docker run \
            --env WORKSPACE_DIR=$DOCKER_WORKSPACE_DIR \
            --env DOCKER_IMAGE=$DOCKER_IMAGE \
            --env PLATFORM=$PLATFORM \
-           --env-file .ci/docker.env \
+           --env-file .github/docker/docker.env \
            -v "${WORKSPACE_DIR}:${DOCKER_WORKSPACE_DIR}" \
            `echo $DOCKER_IMAGE | sed 's/-/:/'` \
-           /bin/bash -c "${DOCKER_WORKSPACE_DIR}/.ci/docker.sh"
+           /bin/bash -c "${DOCKER_WORKSPACE_DIR}/.github/docker/script.sh"
 
 exit 0
