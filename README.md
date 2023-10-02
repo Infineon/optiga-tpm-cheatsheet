@@ -214,6 +214,7 @@ Install Microsoft TPM2.0 simulator on Debian (Bullseye, Buster), Ubuntu (18.04, 
 ```debian-bullseye,debian-buster,ubuntu-18.04,ubuntu-20.04
 $ git clone https://github.com/microsoft/ms-tpm-20-ref ~/ms-tpm-20-ref
 $ cd ~/ms-tpm-20-ref/TPMCmd
+$ git checkout f74c0d9686625c02b0fdd5b2bbe792a22aa96cb6
 $ ./bootstrap
 $ ./configure
 $ make -j$(nproc)
