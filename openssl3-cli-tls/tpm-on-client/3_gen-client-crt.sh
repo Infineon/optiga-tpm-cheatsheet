@@ -18,7 +18,7 @@ echo '01' > ca/serial
 (yes || true) | openssl ca -config config -in tpm.csr -out tpm.crt
 
 # Generate self-signed client cert to demonstrate an invalid client cert (not CA signed)
-openssl req -x509 -sha256 -provider tpm2 -provider base -key handle:0x81000001 -in tpm.csr -out bad-tpm.crt
+openssl req -x509 -sha256 -provider tpm2 -provider default -key handle:0x81000001 -in tpm.csr -out bad-tpm.crt
 
 # Read cert
 #openssl x509 -in tpm.crt -text -noout

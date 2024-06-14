@@ -74,7 +74,7 @@ gen_rsaKey()
         EVP_PKEY_CTX_set_params(ctx, params) <= 0 ||
         EVP_PKEY_generate(ctx, &pkey) <= 0) {
         PRINT("Failed to generate RSA key");
-        return ret;
+        goto exit;
     }
 
     // Print the public component (modulus)
@@ -83,20 +83,19 @@ gen_rsaKey()
     // Store the key object on disk
     if ((out = BIO_new_file(RSA_KEY_PATH, "w")) == NULL) {
         PRINT("Failed to create a new file");
-        goto err1;
+        goto exit;
     }
     if (!PEM_write_bio_PrivateKey(out, pkey, 0, NULL, 0, 0, NULL)) {
         PRINT("Failed to write RSA key to disk");
-        goto err2;
+        goto exit;
     }
 
     ret = 0;
     PRINT("Generated RSA key and saved to disk");
 
-err2:
-    BIO_free_all(out);
-err1:
-    EVP_PKEY_free(pkey);
+exit:
+    out ? BIO_free_all(out) : 0;
+    pkey ? EVP_PKEY_free(pkey) : 0;
     return ret;
 }
 
@@ -122,7 +121,7 @@ gen_ecKey()
         EVP_PKEY_CTX_set_params(ctx, params) <= 0 ||
         EVP_PKEY_generate(ctx, &pkey) <= 0) {
         PRINT("Failed to generate EC key");
-        return ret;
+        goto exit;
     }
 
     // Print the public component
@@ -131,20 +130,19 @@ gen_ecKey()
     // Store the key object on disk
     if ((out = BIO_new_file(EC_KEY_PATH, "w")) == NULL) {
         PRINT("Failed to create a new file");
-        goto err1;
+        goto exit;
     }
     if (!PEM_write_bio_PrivateKey(out, pkey, 0, NULL, 0, 0, NULL)) {
         PRINT("Failed to write EC key to disk");
-        goto err2;
+        goto exit;
     }
 
     ret = 0;
     PRINT("Generated EC key and saved to disk");
 
-err2:
-    BIO_free_all(out);
-err1:
-    EVP_PKEY_free(pkey);
+exit:
+    out ? BIO_free_all(out) : 0;
+    pkey ? EVP_PKEY_free(pkey) : 0;
     return ret;
 }
 
@@ -156,19 +154,18 @@ load_rsa_key()
 
     if ((bio = BIO_new_file(RSA_KEY_PATH, "r")) == NULL) {
         PRINT("Failed to open RSA_KEY_PATH");
-        goto err1;
+        goto exit;
     }
 
     if ((pKey = PEM_read_bio_PrivateKey(bio, NULL, 0, NULL)) == NULL) {
         PRINT("Failed to read RSA key");
-        goto err2;
+        goto exit;
     }
 
     PRINT("Loaded RSA key from disk");
 
-err2:
-    BIO_free_all(bio);
-err1:
+exit:
+    bio ? BIO_free_all(bio) : 0;
     return pKey;
 }
 
@@ -180,25 +177,26 @@ load_ec_key()
 
     if ((bio = BIO_new_file(EC_KEY_PATH, "r")) == NULL) {
         PRINT("Failed to open RSA_KEY_PATH");
-        goto err1;
+        goto exit;
     }
 
     if ((pKey = PEM_read_bio_PrivateKey(bio, NULL, 0, NULL)) == NULL) {
         PRINT("Failed to read EC key");
-        goto err2;
+        goto exit;
     }
 
     PRINT("Loaded EC key from disk");
 
-err2:
-    BIO_free_all(bio);
-err1:
+exit:
+    bio ? BIO_free_all(bio) : 0;
     return pKey;
 }
 
 int
 ec_evp_pkey_sign_verify(EVP_PKEY *pKey)
 {
+    BIO *bio = NULL;
+    EVP_PKEY *pPubKey = NULL;
     EVP_PKEY_CTX *ctx = NULL;
     EVP_PKEY_CTX *ctx2 = NULL;
     unsigned char sha256[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
@@ -210,7 +208,7 @@ ec_evp_pkey_sign_verify(EVP_PKEY *pKey)
     ctx = EVP_PKEY_CTX_new_from_pkey(NULL, pKey, "provider=tpm2");
     if (!ctx) {
         PRINT("EC sign EVP_PKEY_CTX_new_from_pkey error");
-        goto err1;
+        goto exit;
     }
 
     /* Signing */
@@ -221,41 +219,56 @@ ec_evp_pkey_sign_verify(EVP_PKEY *pKey)
         EVP_PKEY_CTX_set_signature_md(ctx, EVP_sha256()) <= 0 ||
         EVP_PKEY_sign(ctx, NULL, &sigLen, sha256, sha256Len) <= 0) {
         PRINT("EC sign init error");
-        goto err2;
+        goto exit;
     }
 
     sig = OPENSSL_malloc(sigLen);
 
     if (!sig) {
         PRINT("EC malloc error");
-        goto err2;
+        goto exit;
     }
 
     PRINT("EC generating signature");
 
     if (EVP_PKEY_sign(ctx, sig, &sigLen, sha256, sha256Len) <= 0) {
         PRINT("EC signing error");
-        goto err3;
+        goto exit;
     }
 
     /* Verification */
 
     PRINT("EC verify signature");
 
-    if ((ctx2 = EVP_PKEY_CTX_new_from_pkey(NULL, pKey, "provider=default")) == NULL) {
-        PRINT("EC verify signature EVP_PKEY_CTX_new_from_pkey error");
-        goto err3;
+    if (!(bio = BIO_new(BIO_s_mem()))) {
+        PRINT("BIO_new error");
+        goto exit;
+    }
+
+    if (PEM_write_bio_PUBKEY(bio, pKey) <= 0) {
+        PRINT("PEM_write_bio_PUBKEY error");
+        goto exit;
+    }
+
+    if (!(pPubKey = PEM_read_bio_PUBKEY(bio, NULL, NULL, NULL))) {
+        PRINT("PEM_read_bio_PUBKEY error");
+        goto exit;
+    }
+
+    if (!(ctx2 = EVP_PKEY_CTX_new_from_pkey(NULL, pPubKey, "provider=default"))) {
+        PRINT("EVP_PKEY_CTX_new_from_pkey error");
+        goto exit;
     }
 
     if (EVP_PKEY_verify_init(ctx2) <= 0 ||
         EVP_PKEY_CTX_set_signature_md(ctx2, EVP_sha256()) <= 0) {
         PRINT("EC verification init error");
-        goto err4;
+        goto exit;
     }
 
     if (EVP_PKEY_verify(ctx2, sig, sigLen, sha256, sha256Len) <= 0) {
         PRINT("EC signature verification error");
-        goto err4;
+        goto exit;
     }
 
     PRINT("EC signature verification ok");
@@ -266,24 +279,25 @@ ec_evp_pkey_sign_verify(EVP_PKEY *pKey)
         PRINT("EC signature verification expected to fail, ok");
     } else {
         PRINT("EC signature verification error");
-        goto err4;
+        goto exit;
     }
 
     ret = 0;
 
-err4:
-    EVP_PKEY_CTX_free(ctx2);
-err3:
-    OPENSSL_free(sig);
-err2:
-    EVP_PKEY_CTX_free(ctx);
-err1:
+exit:
+    ctx2 ? EVP_PKEY_CTX_free(ctx2) : 0;
+    pPubKey ? EVP_PKEY_free(pPubKey) : 0;
+    bio ? BIO_free(bio) : 0;
+    sig ? OPENSSL_free(sig) : 0;
+    ctx ? EVP_PKEY_CTX_free(ctx) : 0;
     return ret;
 }
 
 int
 rsa_evp_pkey_sign_verify(EVP_PKEY *pKey)
 {
+    BIO *bio = NULL;
+    EVP_PKEY *pPubKey = NULL;
     EVP_PKEY_CTX *ctx = NULL;
     EVP_PKEY_CTX *ctx2 = NULL;
     unsigned char sha256[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
@@ -294,7 +308,7 @@ rsa_evp_pkey_sign_verify(EVP_PKEY *pKey)
     ctx = EVP_PKEY_CTX_new_from_pkey(NULL, pKey, "provider=tpm2");
     if (!ctx) {
         PRINT("RSA sign EVP_PKEY_CTX_new_from_pkey error");
-        goto err1;
+        goto exit;
     }
 
     /* Signing */
@@ -302,57 +316,72 @@ rsa_evp_pkey_sign_verify(EVP_PKEY *pKey)
     PRINT("RSA signing");
     if (EVP_PKEY_sign_init(ctx) <= 0 ) {
         PRINT("RSA sign init error");
-        goto err2;
+        goto exit;
     }
     if ( EVP_PKEY_CTX_set_signature_md(ctx, EVP_sha256()) <=0) {
         PRINT("set md error");
-        goto err2;
+        goto exit;
     }
 
     if (EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_PSS_PADDING) <= 0 ||
         EVP_PKEY_CTX_set_signature_md(ctx, EVP_sha256()) <= 0) {
         PRINT("EVP_PKEY_CTX_set_rsa_padding error");
-        goto err2;
+        goto exit;
     }
 
     if (EVP_PKEY_sign(ctx, NULL, &sigLen, sha256, sha256Len) <= 0) {
         PRINT("get siglen error");
-        goto err2;
+        goto exit;
     }
 
     sig = OPENSSL_malloc(sigLen);
 
     if (!sig) {
         PRINT("RSA malloc error");
-        goto err2;
+        goto exit;
     }
 
     PRINT("RSA generating signature");
 
     if (EVP_PKEY_sign(ctx, sig, &sigLen, sha256, sha256Len) <= 0) {
         PRINT("RSA signing error");
-        goto err3;
+        goto exit;
     }
 
     /* Verification */
 
     PRINT("RSA verify signature");
 
-    if ((ctx2 = EVP_PKEY_CTX_new_from_pkey(NULL, pKey, "provider=default")) == NULL) {
-        PRINT("RSA verify signature EVP_PKEY_CTX_new_from_pkey error");
-        goto err3;
+    if (!(bio = BIO_new(BIO_s_mem()))) {
+        PRINT("BIO_new error");
+        goto exit;
+    }
+
+    if (PEM_write_bio_PUBKEY(bio, pKey) <= 0) {
+        PRINT("PEM_write_bio_PUBKEY error");
+        goto exit;
+    }
+
+    if (!(pPubKey = PEM_read_bio_PUBKEY(bio, NULL, NULL, NULL))) {
+        PRINT("PEM_read_bio_PUBKEY error");
+        goto exit;
+    }
+
+    if (!(ctx2 = EVP_PKEY_CTX_new_from_pkey(NULL, pPubKey, "provider=default"))) {
+        PRINT("EVP_PKEY_CTX_new_from_pkey error");
+        goto exit;
     }
 
     if (EVP_PKEY_verify_init(ctx2) <= 0 ||
         EVP_PKEY_CTX_set_rsa_padding(ctx2, RSA_PKCS1_PSS_PADDING) <= 0 ||
         EVP_PKEY_CTX_set_signature_md(ctx2, EVP_sha256()) <= 0) {
         PRINT("RSA verification init error");
-        goto err4;
+        goto exit;
     }
 
     if (EVP_PKEY_verify(ctx2, sig, sigLen, sha256, sha256Len) <= 0) {
         PRINT("RSA signature verification error");
-        goto err4;
+        goto exit;
     }
 
     PRINT("RSA signature verification ok");
@@ -363,24 +392,25 @@ rsa_evp_pkey_sign_verify(EVP_PKEY *pKey)
         PRINT("RSA signature verification expected to fail, ok");
     } else {
         PRINT("RSA signature verification error");
-        goto err4;
+        goto exit;
     }
 
     ret = 0;
 
-err4:
-    EVP_PKEY_CTX_free(ctx2);
-err3:
-    OPENSSL_free(sig);
-err2:
-    EVP_PKEY_CTX_free(ctx);
-err1:
+exit:
+    ctx2 ? EVP_PKEY_CTX_free(ctx2) : 0;
+    pPubKey ? EVP_PKEY_free(pPubKey) : 0;
+    bio ? BIO_free(bio) : 0;
+    sig ? OPENSSL_free(sig) : 0;
+    ctx ? EVP_PKEY_CTX_free(ctx) : 0;
     return ret;
 }
 
 int
 rsa_evp_pkey_encrypt_decrypt(EVP_PKEY *pKey)
 {
+    BIO *bio = NULL;
+    EVP_PKEY *pPubKey = NULL;
     EVP_PKEY_CTX *ctx = NULL;
     EVP_PKEY_CTX *ctx2 = NULL;
     unsigned char clear[] = {1,2,3};
@@ -388,32 +418,46 @@ rsa_evp_pkey_encrypt_decrypt(EVP_PKEY *pKey)
     size_t cipheredLen = 0, decipheredLen = 0, clearLen = 3;
     int ret = -1;
 
-
     /* Encryption (RSA_PKCS1_PADDING == TPM2_ALG_RSAES) */
 
-    if ((ctx = EVP_PKEY_CTX_new_from_pkey(NULL, pKey, "provider=default")) == NULL) {
-        PRINT("RSA encrypt EVP_PKEY_CTX_new_from_pkey error");
-        goto err1;
+    if (!(bio = BIO_new(BIO_s_mem()))) {
+        PRINT("BIO_new error");
+        goto exit;
+    }
+
+    if (PEM_write_bio_PUBKEY(bio, pKey) <= 0) {
+        PRINT("PEM_write_bio_PUBKEY error");
+        goto exit;
+    }
+
+    if (!(pPubKey = PEM_read_bio_PUBKEY(bio, NULL, NULL, NULL))) {
+        PRINT("PEM_read_bio_PUBKEY error");
+        goto exit;
+    }
+
+    if (!(ctx = EVP_PKEY_CTX_new_from_pkey(NULL, pPubKey, "provider=default"))) {
+        PRINT("EVP_PKEY_CTX_new_from_pkey error");
+        goto exit;
     }
 
     if (EVP_PKEY_encrypt_init(ctx) <= 0 ||
         EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_PADDING) <= 0 ||
         EVP_PKEY_encrypt(ctx, NULL, &cipheredLen, clear, clearLen) <= 0) {
         PRINT("Encryption init error");
-        goto err2;
+        goto exit;
     }
 
     ciphered = OPENSSL_malloc(cipheredLen);
     if (!ciphered) {
         PRINT("malloc error");
-        goto err2;
+        goto exit;
     }
 
     PRINT("Generating encryption blob");
 
     if (EVP_PKEY_encrypt(ctx, ciphered, &cipheredLen, clear, clearLen) <= 0) {
         PRINT("Encryption error");
-        goto err3;
+        goto exit;
     }
 
     /* Decryption (RSA_PKCS1_PADDING == TPM2_ALG_RSAES) */
@@ -421,20 +465,20 @@ rsa_evp_pkey_encrypt_decrypt(EVP_PKEY *pKey)
     ctx2 = EVP_PKEY_CTX_new_from_pkey(NULL, pKey, "provider=tpm2");
     if (!ctx2) {
         PRINT("RSA decrypt EVP_PKEY_CTX_new_from_pkey error");
-        goto err3;
+        goto exit;
     }
 
     if (EVP_PKEY_decrypt_init(ctx2) <= 0 ||
         EVP_PKEY_CTX_set_rsa_padding(ctx2, RSA_PKCS1_PADDING) <= 0 ||
         EVP_PKEY_decrypt(ctx2, NULL, &decipheredLen, ciphered, cipheredLen) <= 0) {
         PRINT("Decryption init error");
-        goto err4;
+        goto exit;
     }
 
     deciphered = OPENSSL_malloc(decipheredLen);
     if (!deciphered) {
         PRINT("malloc error");
-        goto err4;
+        goto exit;
     }
 
     memset(deciphered, 0, decipheredLen);
@@ -443,28 +487,26 @@ rsa_evp_pkey_encrypt_decrypt(EVP_PKEY *pKey)
 
     if (EVP_PKEY_decrypt(ctx2, deciphered, &decipheredLen, ciphered, cipheredLen) <= 0) {
         PRINT("Decryption error");
-        goto err5;
+        goto exit;
     }
 
     if((decipheredLen != clearLen) || (strncmp((const char *)clear, (const char *)deciphered, decipheredLen) != 0))
     {
         PRINT("Decryption error, value not the same");
-        goto err5;
+        goto exit;
     }
 
     PRINT("Decryption verification ok");
 
     ret = 0;
 
-err5:
-    OPENSSL_free(deciphered);
-err4:
-    EVP_PKEY_CTX_free(ctx2);
-err3:
-    OPENSSL_free(ciphered);
-err2:
-    EVP_PKEY_CTX_free(ctx);
-err1:
+exit:
+    deciphered ? OPENSSL_free(deciphered) : 0;
+    ctx2 ? EVP_PKEY_CTX_free(ctx2) : 0;
+    ciphered ? OPENSSL_free(ciphered) : 0;
+    ctx ? EVP_PKEY_CTX_free(ctx) : 0;
+    pPubKey ? EVP_PKEY_free(pPubKey) : 0;
+    bio ? BIO_free(bio) : 0;
     return ret;
 }
 
@@ -491,67 +533,63 @@ int main(int argc, char **argv)
      * Here we relies on ENV TPM2OPENSSL_TCTI
      */
 
-    /* Load default provider */
-    if ((prov_default = OSSL_PROVIDER_load(NULL, "default")) == NULL)
-        goto err0;
-
-    /* Self-test */
-    if (!OSSL_PROVIDER_self_test(prov_default))
-        goto err1;
-
     /* Load TPM2 provider */
     if ((prov_tpm2 = OSSL_PROVIDER_load(NULL, "tpm2")) == NULL)
-        goto err1;
+        goto exit;
 
     /* Self-test */
     if (!OSSL_PROVIDER_self_test(prov_tpm2))
-        goto err2;
+        goto exit;
+
+    /* Load default provider */
+    if ((prov_default = OSSL_PROVIDER_load(NULL, "default")) == NULL)
+        goto exit;
+
+    /* Self-test */
+    if (!OSSL_PROVIDER_self_test(prov_default))
+        goto exit;
 
     /* Generate true random */
     if (gen_random())
-        goto err2;
+        goto exit;
 
     /* Generate RSA key */
     if (gen_rsaKey())
-        goto err2;
+        goto exit;
 
     /* Generate EC key */
     if (gen_ecKey())
-        goto err2;
+        goto exit;
 
     /* Load RSA key */
     if ((pRsaKey = load_rsa_key()) == NULL)
-        goto err2;
+        goto exit;
 
     /* Load EC key */
     if ((pEcKey = load_ec_key()) == NULL)
-        goto err3;
+        goto exit;
 
     /* RSA signing & verification */
     if (rsa_evp_pkey_sign_verify(pRsaKey))
-        goto err4;
+        goto exit;
 
     /* EC signing & verification */
     if (ec_evp_pkey_sign_verify(pEcKey))
-        goto err4;
+        goto exit;
 
     /* RSA encryption & decryption */
     if (rsa_evp_pkey_encrypt_decrypt(pRsaKey))
-        goto err4;
+        goto exit;
 
     PRINT("Completed without err...");
 
     ret = 0;
 
-err4:
-    EVP_PKEY_free(pEcKey);
-err3:
-    EVP_PKEY_free(pRsaKey);
-err2:
-    OSSL_PROVIDER_unload(prov_tpm2);
-err1:
-    OSSL_PROVIDER_unload(prov_default);
-err0:
+exit:
+    pEcKey ? EVP_PKEY_free(pEcKey) : 0;
+    pRsaKey ? EVP_PKEY_free(pRsaKey) : 0;
+    prov_tpm2 ? OSSL_PROVIDER_unload(prov_tpm2) : 0;
+    prov_default ? OSSL_PROVIDER_unload(prov_default) : 0;
 
     return ret;
 }

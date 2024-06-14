@@ -114,7 +114,7 @@ OPTIGA™ TPM 2.0 command reference and code examples.
 # Prerequisites
 
 - Platform: x86_64, aarch64
-- OS: Debian (buster, bullseye), Ubuntu (18.04, 20.04, 22.04)
+- OS: Debian (buster, bullseye, bookworm), Ubuntu (18.04, 20.04, 22.04, 24.04)
 
 <!--
 - For hardware TPM 2.0, tested on Raspberry Pi 4 Model B with Iridium 9670 TPM 2.0 board [[10]](#10). For detailed setup guide please visit [[8]](#8).
@@ -133,7 +133,7 @@ $ sudo apt update
 
 Install generic packages:
 ```all
-$ sudo apt -y install autoconf-archive libcmocka0 libcmocka-dev procps iproute2 build-essential git pkg-config gcc libtool automake libssl-dev uthash-dev autoconf doxygen libjson-c-dev libini-config-dev libcurl4-openssl-dev uuid-dev pandoc acl libglib2.0-dev xxd
+$ sudo apt -y install autoconf-archive libcmocka0 libcmocka-dev procps iproute2 build-essential git pkg-config gcc libtool automake libssl-dev uthash-dev autoconf doxygen libjson-c-dev libini-config-dev libcurl4-openssl-dev uuid-dev pandoc acl libglib2.0-dev xxd cmake
 ```
 
 Install platform dependent packages on Ubuntu (18.04, 20.04):
@@ -146,11 +146,21 @@ Download this project for later use:
 $ git clone https://github.com/Infineon/optiga-tpm-cheatsheet ~/optiga-tpm-cheatsheet
 ```
 
+Install newer version of libjson-c-dev on Debian (buster), Ubuntu (18.04):
+```debian-buster,ubuntu-18.04
+$ git clone https://github.com/json-c/json-c ~/json-c
+$ cd ~/json-c
+$ git checkout json-c-0.14-20200419
+$ cmake .
+$ make -j
+$ sudo make install
+```
+
 Install tpm2-tss:
 ```all
 $ git clone https://github.com/tpm2-software/tpm2-tss ~/tpm2-tss
 $ cd ~/tpm2-tss
-$ git checkout 3.2.0
+$ git checkout 4.1.3
 $ ./bootstrap
 $ ./configure
 $ make -j$(nproc)
@@ -166,7 +176,7 @@ Install tpm2-tools:
 ```all
 $ git clone https://github.com/tpm2-software/tpm2-tools ~/tpm2-tools
 $ cd ~/tpm2-tools
-$ git checkout 5.2
+$ git checkout 5.7
 $ ./bootstrap
 $ ./configure
 $ make -j$(nproc)
@@ -178,7 +188,7 @@ Install tpm2-abrmd:
 ```all
 $ git clone https://github.com/tpm2-software/tpm2-abrmd ~/tpm2-abrmd
 $ cd ~/tpm2-abrmd
-$ git checkout 2.4.1
+$ git checkout 3.0.0
 $ ./bootstrap
 $ ./configure
 $ make -j$(nproc)
@@ -198,11 +208,11 @@ $ sudo make install
 $ sudo ldconfig
 ```
 
-Install tpm2-openssl (substitute for tpm2-tss-engine) on Ubuntu-22.04:
-```ubuntu-22.04
+Install tpm2-openssl (substitute for tpm2-tss-engine) on Debian (bookworm), Ubuntu (22.04, 24.04):
+```debian-bookworm,ubuntu-22.04,ubuntu-24.04
 $ git clone https://github.com/tpm2-software/tpm2-openssl ~/tpm2-openssl
 $ cd ~/tpm2-openssl
-$ git checkout 1.1.0
+$ git checkout 1.2.0
 $ ./bootstrap
 $ ./configure <--- optional: "--enable-debug"
 $ make -j$(nproc) <--- "$ make check" to execute self-test. Do not run test in multithreading mode
@@ -221,15 +231,17 @@ $ make -j$(nproc)
 $ sudo make install
 ```
 
-Install libtpms-based TPM emulator on Ubuntu-22.04:
-```ubuntu-22.04
+Install libtpms-based TPM emulator on Debian (bookworm), Ubuntu (22.04, 24.04):
+> The `--without-seccomp` option is used as a workaround to prevent swtpm failures encountered in Github Actions arm64 Docker containers.
+> The specific error encountered is: `swtpm: seccomp_load failed with errno 125: Operation canceled`.
+```debian-bookworm,ubuntu-22.04,ubuntu-24.04
 # Install dependencies
 $ sudo apt-get install -y dh-autoreconf libtasn1-6-dev net-tools libgnutls28-dev expect gawk socat libfuse-dev libseccomp-dev make libjson-glib-dev gnutls-bin
 
 # Install libtpms-devel
 $ git clone https://github.com/stefanberger/libtpms ~/libtpms
 $ cd ~/libtpms
-$ git checkout v0.9.5
+$ git checkout v0.9.6
 $ ./autogen.sh --with-tpm2 --with-openssl
 $ make -j$(nproc)
 $ sudo make install
@@ -238,8 +250,8 @@ $ sudo ldconfig
 # Install Libtpms-based TPM emulator
 $ git clone https://github.com/stefanberger/swtpm ~/swtpm
 $ cd ~/swtpm
-$ git checkout v0.7.3
-$ ./autogen.sh --with-openssl --prefix=/usr
+$ git checkout v0.8.2
+$ ./autogen.sh --with-openssl --without-seccomp --prefix=/usr
 $ make -j$(nproc)
 $ sudo make install
 $ sudo ldconfig
@@ -263,8 +275,8 @@ Start TPM simulator/emulator:
     Platform server listening on port 2322
     $ sleep 5
     ```
-    Start Libtpms-based TPM emulator on Ubuntu-22.04:
-    ```ubuntu-22.04
+    Start Libtpms-based TPM emulator on Debian (bookworm), Ubuntu (22.04, 24.04):
+    ```debian-bookworm,ubuntu-22.04,ubuntu-24.04
     $ mkdir /tmp/emulated_tpm
 
     # Create configuration files for swtpm_setup:
@@ -294,8 +306,8 @@ Start TPM simulator/emulator:
     $ tpm2-abrmd --allow-root --session --tcti=mssim &
     $ sleep 5
     ```
-    Start TPM resource manager on Ubuntu-22.04:
-    ```ubuntu-22.04
+    Start TPM resource manager on Debian (bookworm), Ubuntu (22.04, 24.04):
+    ```debian-bookworm,ubuntu-22.04,ubuntu-24.04
     $ tpm2-abrmd --allow-root --session --tcti=swtpm:host=127.0.0.1,port=2321 &
     $ sleep 5
     ```
@@ -308,7 +320,7 @@ Start TPM simulator/emulator:
     # for tpm2-tss-engine (Debian Bullseye, Debian Buster, Ubuntu-18.04, Ubuntu-20.04)
     $ export TPM2TSSENGINE_TCTI="tabrmd:bus_name=com.intel.tss2.Tabrmd,bus_type=session"
 
-    # for tpm2-openssl (Ubuntu-22.04)
+    # for tpm2-openssl (Ubuntu-22.04, Ubuntu-24.04)
     $ export TPM2OPENSSL_TCTI="tabrmd:bus_name=com.intel.tss2.Tabrmd,bus_type=session"
     ```
 
@@ -1770,87 +1782,87 @@ $ tpm2_clear -c p
 
 ## OpenSSL 3.x CLI
 
-This section is for Ubuntu-22.04.
+This section is for Debian (bookworm), Ubuntu (22.04, 24.04).
 
 Verify TPM provider:
-```ubuntu-22.04
+```debian-bookworm,ubuntu-22.04,ubuntu-24.04
 $ openssl list -providers -provider tpm2 -verbose
 ```
 
 Generate random value:
-```ubuntu-22.04
+```debian-bookworm,ubuntu-22.04,ubuntu-24.04
 $ openssl rand -provider tpm2 -hex 10
 ```
 
 ### PEM Encoded Key Object
 
 Create parent key:
-```ubuntu-22.04
+```debian-bookworm,ubuntu-22.04,ubuntu-24.04
 $ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
 $ tpm2_evictcontrol -C o -c primary_sh.ctx 0x81000001
 ```
 
 Create RSA and EC keys:
-```ubuntu-22.04
+```debian-bookworm,ubuntu-22.04,ubuntu-24.04
 $ openssl genpkey -provider tpm2 -algorithm RSA -pkeyopt bits:2048 -pkeyopt parent:0x81000001 -out rsakey.pem
 $ openssl genpkey -provider tpm2 -algorithm EC -pkeyopt group:P-256 -pkeyopt parent:0x81000001 -out eckey.pem
 ```
 
 Read public component:
-```ubuntu-22.04
-$ openssl pkey -provider tpm2 -provider base -in rsakey.pem -pubout -out rsakey.pub.pem
+```debian-bookworm,ubuntu-22.04,ubuntu-24.04
+$ openssl pkey -provider tpm2 -provider default -in rsakey.pem -pubout -out rsakey.pub.pem
 $ openssl rsa -pubin -text -in rsakey.pub.pem
 
-$ openssl pkey -provider tpm2 -provider base -in eckey.pem -pubout -out eckey.pub.pem
+$ openssl pkey -provider tpm2 -provider default -in eckey.pem -pubout -out eckey.pub.pem
 $ openssl ec -pubin -text -in eckey.pub.pem
 ```
 
 RSA encryption & decryption:
-```ubuntu-22.04
+```debian-bookworm,ubuntu-22.04,ubuntu-24.04
 $ echo "some secret" > secret.clear
 $ openssl pkeyutl -pubin -inkey rsakey.pub.pem -in secret.clear -encrypt -out secret.cipher
-$ openssl pkeyutl -provider tpm2 -provider base -inkey rsakey.pem -decrypt -in secret.cipher -out secret.decipher
+$ openssl pkeyutl -provider tpm2 -provider default -inkey rsakey.pem -decrypt -in secret.cipher -out secret.decipher
 $ diff secret.clear secret.decipher
 ```
 
 RSA signing & verification (padding schemes: pkcs1, pss):
-```ubuntu-22.04
+```debian-bookworm,ubuntu-22.04,ubuntu-24.04
 $ dd bs=1 count=32 </dev/urandom > data
-$ openssl pkeyutl -provider tpm2 -provider base -pkeyopt pad-mode:pss -digest sha256 -inkey rsakey.pem -sign -rawin -in data -out data.sig
+$ openssl pkeyutl -provider tpm2 -provider default -pkeyopt pad-mode:pss -digest sha256 -inkey rsakey.pem -sign -rawin -in data -out data.sig
 $ openssl pkeyutl -pkeyopt pad-mode:pss -digest sha256 -pubin -inkey rsakey.pub.pem -verify -rawin -in data -sigfile data.sig
 ```
 
 EC signing & verification:
-```ubuntu-22.04
+```debian-bookworm,ubuntu-22.04,ubuntu-24.04
 $ dd bs=1 count=32 </dev/urandom > data
-$ openssl pkeyutl -provider tpm2 -provider base -digest sha256 -inkey eckey.pem -sign -rawin -in data -out data.sig
+$ openssl pkeyutl -provider tpm2 -provider default -digest sha256 -inkey eckey.pem -sign -rawin -in data -out data.sig
 $ openssl pkeyutl -digest sha256 -pubin -inkey eckey.pub.pem -verify -rawin -in data -sigfile data.sig
 ```
 
 Create self-signed certificate:
-```ubuntu-22.04
-$ openssl req -new -x509 -provider tpm2 -provider base -key rsakey.pem -subj "/CN=TPM/O=Infineon/C=SG" -out rsakey.crt.pem
+```debian-bookworm,ubuntu-22.04,ubuntu-24.04
+$ openssl req -new -x509 -provider tpm2 -provider default -key rsakey.pem -subj "/CN=TPM/O=Infineon/C=SG" -out rsakey.crt.pem
 $ openssl x509 -in rsakey.crt.pem -text -noout
-$ openssl req -new -x509 -provider tpm2 -provider base -key eckey.pem -subj "/CN=TPM/O=Infineon/C=SG" -out eckey.crt.pem
+$ openssl req -new -x509 -provider tpm2 -provider default -key eckey.pem -subj "/CN=TPM/O=Infineon/C=SG" -out eckey.crt.pem
 $ openssl x509 -in eckey.crt.pem -text -noout
 ```
 
 Create certificate signing request (CSR):
-```ubuntu-22.04
-$ openssl req -new -provider tpm2 -provider base -key rsakey.pem -subj "/CN=TPM/O=Infineon/C=SG" -out rsakey.csr.pem
+```debian-bookworm,ubuntu-22.04,ubuntu-24.04
+$ openssl req -new -provider tpm2 -provider default -key rsakey.pem -subj "/CN=TPM/O=Infineon/C=SG" -out rsakey.csr.pem
 $ openssl req -in rsakey.csr.pem -text -noout
-$ openssl req -new -provider tpm2 -provider base -key eckey.pem -subj "/CN=TPM/O=Infineon/C=SG" -out eckey.csr.pem
+$ openssl req -new -provider tpm2 -provider default -key eckey.pem -subj "/CN=TPM/O=Infineon/C=SG" -out eckey.csr.pem
 $ openssl req -in eckey.csr.pem -text -noout
 ```
 
 Clean up:
-```ubuntu-22.04
+```debian-bookworm,ubuntu-22.04,ubuntu-24.04
 $ tpm2_clear -c p
 ```
 
 ### Serialized Key
 
-```ubuntu-22.04
+```debian-bookworm,ubuntu-22.04,ubuntu-24.04
 # Create keys
 $ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
 $ tpm2_create -C primary_sh.ctx -g sha256 -G rsa -u rsakey.pub -r rsakey.priv
@@ -1869,7 +1881,7 @@ $ tpm2_clear -c p
 
 ### Persistent Key
 
-```ubuntu-22.04
+```debian-bookworm,ubuntu-22.04,ubuntu-24.04
 # Create keys
 $ tpm2_createprimary -C o -g sha256 -G ecc -c primary_sh.ctx
 $ tpm2_create -C primary_sh.ctx -g sha256 -G rsa -u rsakey.pub -r rsakey.priv
@@ -1891,7 +1903,7 @@ $ tpm2_clear -c p
 2 examples, TPM-enabled server or client.
 
 TPM-enabled server:
-```ubuntu-22.04
+```debian-bookworm,ubuntu-22.04,ubuntu-24.04
 $ cd ~/optiga-tpm-cheatsheet/openssl3-cli-tls/tpm-on-server
 $ chmod a+x *.sh
 $ ./0_clean-up.sh
@@ -1914,7 +1926,7 @@ $ tpm2_clear -c p
 ```
 
 TPM-enabled client:
-```ubuntu-22.04
+```debian-bookworm,ubuntu-22.04,ubuntu-24.04
 $ cd ~/optiga-tpm-cheatsheet/openssl3-cli-tls/tpm-on-client
 $ chmod a+x *.sh
 $ ./0_clean-up.sh
@@ -1937,7 +1949,7 @@ $ tpm2_clear -c p
 
 ## OpenSSL 3.x Library
 
-This section is for Ubuntu-22.04.
+This section is for Debian (bookworm), Ubuntu (22.04, 24.04).
 
 ### General Examples
 
@@ -1946,7 +1958,7 @@ This section is for Ubuntu-22.04.
 - RSA encryption/decryption/sign/verification
 - EC sign/verification
 
-```ubuntu-22.04
+```debian-bookworm,ubuntu-22.04,ubuntu-24.04
 $ gcc -Wall -o examples ~/optiga-tpm-cheatsheet/openssl3-lib-general-examples/examples.c -lssl -lcrypto
 $ ./examples
 ```
@@ -1956,7 +1968,7 @@ $ ./examples
 2 examples, TPM-enabled server or client.
 
 TPM-enabled server:
-```ubuntu-22.04
+```debian-bookworm,ubuntu-22.04,ubuntu-24.04
 $ cd ~/optiga-tpm-cheatsheet/openssl3-lib-tls/tpm-on-server
 $ chmod a+x *.sh
 $ ./0_clean-up.sh
@@ -1981,7 +1993,7 @@ $ tpm2_clear -c p
 ```
 
 TPM-enabled client:
-```ubuntu-22.04
+```debian-bookworm,ubuntu-22.04,ubuntu-24.04
 $ cd ~/optiga-tpm-cheatsheet/openssl3-lib-tls/tpm-on-client
 $ chmod a+x *.sh
 $ ./0_clean-up.sh
@@ -4058,12 +4070,12 @@ $ export DOCKER_IMAGE=debian-bullseye
 $ docker run  --cpus=$(nproc) \
               --memory=7g \
               -it \
-              --env WORKSPACE_DIR=/workspace \
+              --env WORKSPACE_DIR=/root/optiga-tpm-cheatsheet \
               --env DOCKER_IMAGE=$DOCKER_IMAGE \
-              --env-file .ci/docker.env \
+              --env-file .github/docker/docker.env \
               -v "$(pwd):/root/optiga-tpm-cheatsheet" \
               `echo ${DOCKER_IMAGE} | sed 's/-/:/'` \
-              /bin/bash -c "/root/optiga-tpm-cheatsheet/.ci/docker.sh"
+              /bin/bash -c "/root/optiga-tpm-cheatsheet/.github/docker/script.sh"
 ```
 <!--
 # Windows
@@ -4071,12 +4083,12 @@ $ set DOCKER_IMAGE=debian-bullseye
 $ docker run  --cpus=%NUMBER_OF_PROCESSORS% ^
               --memory=7g ^
               -it ^
-              --env WORKSPACE_DIR=/workspace ^
+              --env WORKSPACE_DIR=/root/optiga-tpm-cheatsheet ^
               --env DOCKER_IMAGE=%DOCKER_IMAGE% ^
-              --env-file .ci/docker.env ^
+              --env-file .github/docker/docker.env ^
               -v "%cd%:/root/optiga-tpm-cheatsheet" ^
               %DOCKER_IMAGE% ^
-              /bin/bash -c "/root/optiga-tpm-cheatsheet/.ci/docker.sh"
+              /bin/bash -c "/root/optiga-tpm-cheatsheet/.github/docker/script.sh"
 -->
 
 # References
