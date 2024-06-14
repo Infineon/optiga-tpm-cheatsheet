@@ -11,11 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        docker_image: ["debian-buster", "debian-bullseye", "ubuntu-18.04", "ubuntu-20.04", "ubuntu-22.04"]
+        docker_image: ["debian-buster", "debian-bullseye", "debian-bookworm", "ubuntu-18.04", "ubuntu-20.04", "ubuntu-22.04", "ubuntu-24.04"]
         platform: ["linux-arm64", "linux-amd64"]
-        exclude:
-          - docker_image: "ubuntu-22.04"
-            platform: "linux-arm64"
     steps:
       - name: 'Set up QEMU for cross-platform emulation'
         uses: docker/setup-qemu-action@v2
